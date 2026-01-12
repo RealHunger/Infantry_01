@@ -163,7 +163,7 @@ void gimbal_task_func(void const * argument) {
                 float mouse_x = (float)rc->mouse.x * MOUSE_YAW_SENS;
                 float mouse_y = (float)rc->mouse.y * MOUSE_PIT_SENS;
 
-                world_pit_target -= (ry * RC_PIT_SENS) - mouse_y;
+                world_pit_target -= (ry * RC_PIT_SENS) + mouse_y;
                 world_yaw_target -= (rx * RC_YAW_SENS) + mouse_x;
 
             }

@@ -1219,7 +1219,7 @@ static void All_Motors_Init(void) {
     // 4. GM6020 YAW轴 (位置-速度串级)
     // 参数含义: [ID, 句柄, 参数个数, P_Kp, P_Ki, V_Kp, V_Ki, V_Kd, Out_Max]
     GM6020_YAW.init(&GM6020_YAW, 0x206, &hcan1, 6,
-                    800.0,     /* P_Kp */
+                    150.0,     /* P_Kp */
                     0.0,      /* P_Ki */
                     200.0,    /* V_Kp */
                     0.0,      /* V_Ki */
