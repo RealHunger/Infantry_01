@@ -14,6 +14,7 @@ int auto_aim_init(struct usb_device *usb_dev) {
     if (usb_dev == NULL) {
         return -1;
     }
+
     auto_aim_usb = usb_dev;
 
     return 0;
@@ -66,12 +67,4 @@ int is_target_valid(target_info_t *target) {
         return 0;
     }
     return 1;
-}
-
-// 自瞄角度限位控制 (保留你的原版逻辑，仅优化写法更简洁，功能不变)
-void auto_aim_control(target_info_t *target, float *yaw_output, float *pitch_output) {
-    *yaw_output = target->aim_target_yaw;
-    // 你的原版俯仰角限位逻辑，完全保留
-    *pitch_output = target->aim_target_pitch > 0.45f ? 0.45f : target->aim_target_pitch;
-    *pitch_output = *pitch_output < -0.45f ? -0.45f : *pitch_output;
 }

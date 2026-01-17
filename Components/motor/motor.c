@@ -610,7 +610,7 @@ void M3508_VEL_PID_set_para(const struct motor_device *motor, const char* which_
 #include <stdarg.h>
 
 /* M2006 数据结构体 */
-struct M2006_data {
+struct M2006_vel_data {
     // 控制量
     int16_t _v_des;          // 目标转速 (单位: rpm)
     int16_t _current_output; // PID 计算出的电流输出 (-10000 ~ 10000)
@@ -645,9 +645,9 @@ struct M2006_data {
 void M2006_VEL_PID_init(struct motor_device *motor, uint32_t motor_ID, CAN_HandleTypeDef *hcan, int para_num, ...)
 {
     if (motor == NULL || motor->motor_data == NULL) return;
-    struct M2006_data *d = (struct M2006_data *)motor->motor_data;
+    struct M2006_vel_data *d = (struct M2006_vel_data *)motor->motor_data;
 
-    memset(d, 0, sizeof(struct M2006_data));
+    memset(d, 0, sizeof(struct M2006_vel_data));
 
     motor->motor_id = (uint32_t)(motor_ID & 0x7FFU);
     if (hcan != NULL) motor->motor_can_handle = hcan;
@@ -671,10 +671,10 @@ void M2006_VEL_PID_init(struct motor_device *motor, uint32_t motor_ID, CAN_Handl
 }
 
 /* M2006 反馈解析 */
-void M2006_get_measure(const struct motor_device *motor, const uint8_t *data)
+void M2006_vel_get_measure(const struct motor_device *motor, const uint8_t *data)
 {
     if (motor == NULL || motor->motor_data == NULL || data == NULL) return;
-    struct M2006_data *d = (struct M2006_data *)motor->motor_data;
+    struct M2006_vel_data *d = (struct M2006_vel_data *)motor->motor_data;
 
     d->POS = (int16_t)((uint16_t)data[0] << 8 | (uint16_t)data[1]);
     d->VEL = (int16_t)((uint16_t)data[2] << 8 | (uint16_t)data[3]);
@@ -683,14 +683,14 @@ void M2006_get_measure(const struct motor_device *motor, const uint8_t *data)
     d->ERR = (int8_t)data[7];
 }
 
-void M2006_enable(struct motor_device *motor) {
+void M2006_vel_enable(struct motor_device *motor) {
     if (motor == NULL || motor->motor_data == NULL) return;
-    ((struct M2006_data *)motor->motor_data)->enable_flag = 1;
+    ((struct M2006_vel_data *)motor->motor_data)->enable_flag = 1;
 }
 
-void M2006_disable(struct motor_device *motor) {
+void M2006_vel_disable(struct motor_device *motor) {
     if (motor == NULL || motor->motor_data == NULL) return;
-    struct M2006_data *d = (struct M2006_data *)motor->motor_data;
+    struct M2006_vel_data *d = (struct M2006_vel_data *)motor->motor_data;
     d->enable_flag = 0;
     d->_i_term = 0.0f;
     d->_current_output = 0;
@@ -698,7 +698,7 @@ void M2006_disable(struct motor_device *motor) {
 
 void M2006_VEL_PID_update(struct motor_device *motor) {
     if (motor == NULL || motor->motor_data == NULL) return;
-    struct M2006_data *d = (struct M2006_data *)motor->motor_data;
+    struct M2006_vel_data *d = (struct M2006_vel_data *)motor->motor_data;
 
     if (d->enable_flag == 0) {
         d->_i_term = 0.0f;
@@ -730,7 +730,7 @@ void M2006_VEL_PID_update(struct motor_device *motor) {
 void M2006_VEL_PID_set_target(const struct motor_device *motor, const int para_num, ...)
 {
     if (motor == NULL || motor->motor_data == NULL) return;
-    struct M2006_data *d = (struct M2006_data *)motor->motor_data;
+    struct M2006_vel_data *d = (struct M2006_vel_data *)motor->motor_data;
 
     va_list ap;
     va_start(ap, para_num);
@@ -741,7 +741,7 @@ void M2006_VEL_PID_set_target(const struct motor_device *motor, const int para_n
 /* M2006 状态获取 */
 void M2006_VEL_PID_get_status(const struct motor_device *motor, const char* which_status, void* status_data) {
     if (motor == NULL || motor->motor_data == NULL || which_status == NULL || status_data == NULL) return;
-    struct M2006_data *d = (struct M2006_data *)motor->motor_data;
+    struct M2006_vel_data *d = (struct M2006_vel_data *)motor->motor_data;
 
     if (strcmp(which_status, "POS") == 0) *(int16_t *)status_data = d->POS;
     else if (strcmp(which_status, "VEL") == 0) *(int16_t *)status_data = d->VEL;
@@ -760,7 +760,208 @@ void M2006_VEL_PID_get_status(const struct motor_device *motor, const char* whic
 /* M2006 参数设置 */
 void M2006_VEL_PID_set_para(const struct motor_device *motor, const char* which_para, void* para_data) {
     if (motor == NULL || motor->motor_data == NULL || which_para == NULL || para_data == NULL) return;
-    struct M2006_data *d = (struct M2006_data *)motor->motor_data;
+    struct M2006_vel_data *d = (struct M2006_vel_data *)motor->motor_data;
+
+    if (strcmp(which_para, "Kp") == 0) d->_kp = *(float *)para_data;
+    else if (strcmp(which_para, "Ki") == 0) d->_ki = *(float *)para_data;
+    else if (strcmp(which_para, "Kd") == 0) d->_kd = *(float *)para_data;
+    else if (strcmp(which_para, "current_max") == 0) d->_current_output_max = *(float *)para_data;
+    else if (strcmp(which_para, "i_max") == 0) {
+        d->_i_output_max = *(float *)para_data;
+        if (d->_i_term > d->_i_output_max) d->_i_term = d->_i_output_max;
+        if (d->_i_term < -d->_i_output_max) d->_i_term = -d->_i_output_max;
+    }
+    else if (strcmp(which_para, "alpha") == 0) {
+        float a = *(float *)para_data;
+        if (a < 0.0f) a = 0.0f; if (a > 1.0f) a = 1.0f;
+        d->_d_filter_alpha = a;
+    }
+}
+/**********************************************************************************************************************/
+/* M2006——位置控制 */
+#include <string.h>
+#include <stdarg.h>
+
+/* M2006 数据结构体 */
+struct M2006_pos_data {
+    // 控制量
+    float _p_des;          // 目标位置 (单位: rpm)
+    int16_t _current_output; // PID 计算出的电流输出 (-10000 ~ 10000)
+
+    float _p_relative;
+    int32_t _round_num;
+    int16_t _last_POS;
+
+    // PID 参数
+    float _kp;
+    float _ki;
+    float _kd;
+
+    // PID 内部状态
+    float _i_term;
+    int16_t _last_error;
+    float _last_d_out;
+    float _d_filter_alpha;
+
+    // 反馈量
+    int16_t POS;
+    int16_t VEL;
+    int16_t CURRENT;
+    int8_t TEMP;
+    int8_t ERR;
+
+    // 输出限幅
+    float _current_output_max;
+    float _i_output_max;
+
+    //使能状态
+    uint8_t enable_flag;
+};
+
+static float M2006_pos_rad_format(float angle)
+{
+    if (angle > pi) {
+        while (angle > pi) {
+            angle = angle - 2 * pi;
+        }
+    }
+    else if (angle < -pi) {
+        while (angle < -pi) {
+            angle = angle + 2 * pi;
+        }
+    }
+    return angle;
+}
+/* M2006 初始化 */
+void M2006_POS_PID_init(struct motor_device *motor, uint32_t motor_ID, CAN_HandleTypeDef *hcan, int para_num, ...)
+{
+    if (motor == NULL || motor->motor_data == NULL) return;
+    struct M2006_pos_data *d = (struct M2006_pos_data *)motor->motor_data;
+
+    memset(d, 0, sizeof(struct M2006_pos_data));
+
+    motor->motor_id = (uint32_t)(motor_ID & 0x7FFU);
+    if (hcan != NULL) motor->motor_can_handle = hcan;
+
+    // 默认值
+    d->_current_output_max = 500.0f;
+    d->_i_output_max = 500.0f;
+    d->_d_filter_alpha = 1.0f;
+
+    if (para_num > 0) {
+        va_list ap;
+        va_start(ap, para_num);
+        if (para_num >= 1) d->_kp = (float)va_arg(ap, double);
+        if (para_num >= 2) d->_ki = (float)va_arg(ap, double);
+        if (para_num >= 3) d->_kd = (float)va_arg(ap, double);
+        if (para_num >= 4) d->_current_output_max = (float)va_arg(ap, double);
+        if (para_num >= 5) d->_i_output_max = (float)va_arg(ap, double);
+        if (para_num >= 6) d->_d_filter_alpha = (float)va_arg(ap, double);
+        va_end(ap);
+    }
+}
+
+/* M2006 反馈解析 */
+void M2006_pos_get_measure(const struct motor_device *motor, const uint8_t *data)
+{
+    if (motor == NULL || motor->motor_data == NULL || data == NULL) return;
+    struct M2006_pos_data *d = (struct M2006_pos_data *)motor->motor_data;
+
+    d->_last_POS = d->POS;
+    d->POS = (int16_t)((uint16_t)data[0] << 8 | (uint16_t)data[1]);
+    d->VEL = (int16_t)((uint16_t)data[2] << 8 | (uint16_t)data[3]);
+    d->CURRENT = (int16_t)((uint16_t)data[4] << 8 | (uint16_t)data[5]);
+    d->TEMP = (int8_t)data[6];
+    d->ERR = (int8_t)data[7];
+    if (d->POS - d->_last_POS > 4096) {
+        d->_round_num--;
+    }
+    else if (d->POS - d->_last_POS < -4096) {
+        d->_round_num++;
+    }
+
+    d->_p_relative = M2006_pos_rad_format(((float)(d->POS + d->_round_num * 8192) / 8192 / 36.0f / 72.0f * 26.0f * 2 * pi));
+}
+
+void M2006_pos_enable(struct motor_device *motor) {
+    if (motor == NULL || motor->motor_data == NULL) return;
+    ((struct M2006_pos_data *)motor->motor_data)->enable_flag = 1;
+}
+
+void M2006_pos_disable(struct motor_device *motor) {
+    if (motor == NULL || motor->motor_data == NULL) return;
+    struct M2006_pos_data *d = (struct M2006_pos_data *)motor->motor_data;
+    d->enable_flag = 0;
+    d->_i_term = 0.0f;
+    d->_current_output = 0;
+}
+
+void M2006_POS_PID_update(struct motor_device *motor) {
+    if (motor == NULL || motor->motor_data == NULL) return;
+    struct M2006_pos_data *d = (struct M2006_pos_data *)motor->motor_data;
+
+    if (d->enable_flag == 0) {
+        d->_i_term = 0.0f;
+        d->_current_output = 0;
+        return;
+    }
+
+    float error =  M2006_pos_rad_format(d->_p_des - d->_p_relative);
+    float p_out = d->_kp * (float)error;
+
+    d->_i_term += d->_ki * (float)error;
+    if (d->_i_term > d->_i_output_max) d->_i_term = d->_i_output_max;
+    if (d->_i_term < -d->_i_output_max) d->_i_term = -d->_i_output_max;
+
+    float current_d_raw = d->_kd * (float)(error - d->_last_error);
+    float d_out = d->_d_filter_alpha * current_d_raw + (1.0f - d->_d_filter_alpha) * d->_last_d_out;
+
+    d->_last_error = error;
+    d->_last_d_out = d_out;
+
+    float total_out = p_out + d->_i_term + d_out;
+    if (total_out > d->_current_output_max) total_out = d->_current_output_max;
+    if (total_out < -d->_current_output_max) total_out = -d->_current_output_max;
+
+    d->_current_output = (int16_t)total_out;
+}
+
+/* M2006 目标设置 */
+void M2006_POS_PID_set_target(const struct motor_device *motor, const int para_num, ...)
+{
+    if (motor == NULL || motor->motor_data == NULL) return;
+    struct M2006_pos_data *d = (struct M2006_pos_data *)motor->motor_data;
+
+    va_list ap;
+    va_start(ap, para_num);
+    if (para_num >= 1) d->_p_des = (float)va_arg(ap, double);
+    va_end(ap);
+}
+
+/* M2006 状态获取 */
+void M2006_POS_PID_get_status(const struct motor_device *motor, const char* which_status, void* status_data) {
+    if (motor == NULL || motor->motor_data == NULL || which_status == NULL || status_data == NULL) return;
+    struct M2006_pos_data *d = (struct M2006_pos_data *)motor->motor_data;
+
+    if (strcmp(which_status, "POS") == 0) *(int16_t *)status_data = d->POS;
+    else if (strcmp(which_status, "VEL") == 0) *(int16_t *)status_data = d->VEL;
+    else if (strcmp(which_status, "CURRENT") == 0) *(int16_t *)status_data = d->CURRENT;
+    else if (strcmp(which_status, "TEMP") == 0) *(int8_t *)status_data = d->TEMP;
+    else if (strcmp(which_status, "ERR") == 0) *(int8_t *)status_data = d->ERR;
+    else if (strcmp(which_status, "relative_pos") == 0) *(float *)status_data = d->_p_relative;
+    else if (strcmp(which_status, "p_des") == 0) *(float *)status_data = d->_p_des;
+    else if (strcmp(which_status, "Kp") == 0) *(float *)status_data = d->_kp;
+    else if (strcmp(which_status, "Ki") == 0) *(float *)status_data = d->_ki;
+    else if (strcmp(which_status, "Kd") == 0) *(float *)status_data = d->_kd;
+    else if (strcmp(which_status, "current_max") == 0) *(float *)status_data = d->_current_output_max;
+    else if (strcmp(which_status, "i_max") == 0) *(float *)status_data = d->_i_output_max;
+    else if (strcmp(which_status, "alpha") == 0) *(float *)status_data = d->_d_filter_alpha;
+}
+
+/* M2006 参数设置 */
+void M2006_POS_PID_set_para(const struct motor_device *motor, const char* which_para, void* para_data) {
+    if (motor == NULL || motor->motor_data == NULL || which_para == NULL || para_data == NULL) return;
+    struct M2006_pos_data *d = (struct M2006_pos_data *)motor->motor_data;
 
     if (strcmp(which_para, "Kp") == 0) d->_kp = *(float *)para_data;
     else if (strcmp(which_para, "Ki") == 0) d->_ki = *(float *)para_data;
@@ -1066,21 +1267,21 @@ struct motor_device M3508_CHASSIS_4 = {
 };
 
 /* --- 3. 拨弹电机 (M2006) --- */
-struct M2006_data M2006_TRIGGER_data = {0};
+struct M2006_pos_data M2006_TRIGGER_data = {0};
 struct motor_device M2006_TRIGGER = {
     .motor_name = "M2006_TRIGGER",
     .motor_id = 0x205,
     .motor_can_handle = NULL,
     .motor_data = &M2006_TRIGGER_data,
-    .init = M2006_VEL_PID_init,
-    .get_measure = M2006_get_measure,
-    .update = M2006_VEL_PID_update,
+    .init = M2006_POS_PID_init,
+    .get_measure = M2006_pos_get_measure,
+    .update = M2006_POS_PID_update,
     .send_ctrl_cmd = NULL,
-    .send_disable_cmd = M2006_disable,
-    .send_enable_cmd = M2006_enable,
-    .set_target = M2006_VEL_PID_set_target,
-    .get_status = M2006_VEL_PID_get_status,
-    .set_para = M2006_VEL_PID_set_para
+    .send_disable_cmd = M2006_pos_disable,
+    .send_enable_cmd = M2006_pos_enable,
+    .set_target = M2006_POS_PID_set_target,
+    .get_status = M2006_POS_PID_get_status,
+    .set_para = M2006_POS_PID_set_para
 };
 
 /* --- 4. 云台 Yaw (GM6020) --- */
@@ -1208,9 +1409,9 @@ static void All_Motors_Init(void) {
 
     // 3. M2006 拨弹电机 (速度环)
     M2006_TRIGGER.init(&M2006_TRIGGER, 0x205, &hcan1, 6,
-                       10.0,     /* Kp */
-                       0.1,      /* Ki */
-                       0.0,      /* Kd */
+                       1.0,     /* Kp */
+                       0.0,      /* Ki */
+                       0.1,      /* Kd */
                        10000.0,  /* Max_Out */
                        3000.0,   /* I_Max */
                        1.0       /* Alpha */

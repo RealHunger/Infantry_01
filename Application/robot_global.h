@@ -56,7 +56,7 @@ typedef struct {
     // 5. 输入引用指针
     const RC_ctrl_t *rc;         // 遥控器原始数据引用
 
-    // ==========【新增核心】自瞄视觉数据 - 全局共享 ==========
+
     target_info_t target_info;   // 上位机下发的自瞄数据(valid,shoot,yaw,pitch)
 
 } robot_ctrl_info_t;
