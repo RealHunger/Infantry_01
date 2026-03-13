@@ -3,6 +3,8 @@
 
 /* 实例化全局控制变量 */
 robot_ctrl_info_t robot_ctrl;
+gateway_referee_t gateway_data; //电管反馈数据
+uint8_t can_test_raw[8] = {0}; // 记录存储收到的原始数据
 
 /**
  * @brief 全局控制变量初始化
@@ -11,6 +13,7 @@ robot_ctrl_info_t robot_ctrl;
 void Robot_Global_Init(void) {
     // 结构体整体清零 (将所有浮点数置0，指针置空，新增的target_info也会被清零)
     memset(&robot_ctrl, 0, sizeof(robot_ctrl_info_t));
+    memset(&gateway_data, 0, sizeof(gateway_referee_t)); //再加一下上电的清零喵
 
     // 初始模式设置
     robot_ctrl.gimbal_mode  = GIMBAL_RELAX;

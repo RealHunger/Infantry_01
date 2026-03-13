@@ -10,12 +10,15 @@
 #include "math.h"
 #include "cmsis_os.h"
 #include "../../Bsp/LED/bsp_LED.h"
+#include "../../Application/robot_global.h"
 
 #define pi (fp32)M_PI
 
 extern CAN_HandleTypeDef hcan1;
 extern CAN_HandleTypeDef hcan2;
-
+extern  uint16_t cnt;
+uint8_t can_raw_101[8] = {0};
+uint8_t can_raw_102[8] = {0};
 /**********************************************************************************************************************/
 /* 达妙电机——MIT控制 */
 
@@ -1466,6 +1469,41 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 
     /* --- 处理 CAN2 总线 (达妙 + 发射机构) --- */
     if (hcan == &hcan2) {
+
+        //新增一下拦截解析下位C板数据信息的can信息解析，对应ID为 0x101
+        if (rx_header.StdId == 0x101) {
+            cnt ++ ;
+
+            for(int i = 0; i < 8; i++) {
+                can_raw_101[i] = rx_data[i];
+            }
+
+            // 利用位移操作，将大端序的 2 个 uint8 拼成 1 个 uint16
+            gateway_data.current_HP               = (rx_data[0] << 8) | rx_data[1];
+            gateway_data.shooter_17mm_barrel_heat = (rx_data[2] << 8) | rx_data[3];
+            gateway_data.buffer_energy            = (rx_data[4] << 8) | rx_data[5];
+            gateway_data.stage_remain_time        = (rx_data[6] << 8) | rx_data[7];
+        }
+
+        // 拦截第二帧附加数据 0x102
+        if (rx_header.StdId == 0x102) {
+
+            for(int i = 0; i < 8; i++) {
+                can_raw_102[i] = rx_data[i];
+            }
+
+            gateway_data.allow_bullet_17 = (rx_data[0] << 8) | rx_data[1];
+
+            // 逆向拆解 Byte 2
+            gateway_data.armor_id             = (rx_data[2] >> 4) & 0x0F;
+            gateway_data.HP_deducation_reason = rx_data[2] & 0x0F;
+
+            // 逆向拆解 Byte 3
+            gateway_data.place_status  = (rx_data[3] >> 4) & 0x03;
+            gateway_data.game_progress = rx_data[3] & 0x0F;
+        }
+
+
         // 1. 达妙电机反馈 (达妙反馈 ID 通常为 0x00，内部通过 Data[0] 区分 ID)
         if (rx_header.StdId == 0x00) {
             struct motor_device *dm = motor_get_device("J4310_PITCH");
