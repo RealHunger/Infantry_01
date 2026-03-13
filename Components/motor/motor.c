@@ -1479,10 +1479,10 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
             }
 
             // 利用位移操作，将大端序的 2 个 uint8 拼成 1 个 uint16
-            gateway_data.current_HP               = (rx_data[0] << 8) | rx_data[1];
-            gateway_data.shooter_17mm_barrel_heat = (rx_data[2] << 8) | rx_data[3];
-            gateway_data.buffer_energy            = (rx_data[4] << 8) | rx_data[5];
-            gateway_data.stage_remain_time        = (rx_data[6] << 8) | rx_data[7];
+            robot_ctrl.gateway_referee_t.current_HP               = (rx_data[0] << 8) | rx_data[1];
+            robot_ctrl.gateway_referee_t.shooter_17mm_barrel_heat = (rx_data[2] << 8) | rx_data[3];
+            robot_ctrl.gateway_referee_t.buffer_energy            = (rx_data[4] << 8) | rx_data[5];
+            robot_ctrl.gateway_referee_t.stage_remain_time        = (rx_data[6] << 8) | rx_data[7];
         }
 
         // 拦截第二帧附加数据 0x102
@@ -1492,15 +1492,15 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
                 can_raw_102[i] = rx_data[i];
             }
 
-            gateway_data.allow_bullet_17 = (rx_data[0] << 8) | rx_data[1];
+            robot_ctrl.gateway_referee_t.allow_bullet_17 = (rx_data[0] << 8) | rx_data[1];
 
             // 逆向拆解 Byte 2
-            gateway_data.armor_id             = (rx_data[2] >> 4) & 0x0F;
-            gateway_data.HP_deducation_reason = rx_data[2] & 0x0F;
+            robot_ctrl.gateway_referee_t.armor_id             = (rx_data[2] >> 4) & 0x0F;
+            robot_ctrl.gateway_referee_t.HP_deducation_reason = rx_data[2] & 0x0F;
 
             // 逆向拆解 Byte 3
-            gateway_data.place_status  = (rx_data[3] >> 4) & 0x03;
-            gateway_data.game_progress = rx_data[3] & 0x0F;
+            robot_ctrl.gateway_referee_t.place_status  = (rx_data[3] >> 4) & 0x03;
+            robot_ctrl.gateway_referee_t.game_progress = rx_data[3] & 0x0F;
         }
 
 

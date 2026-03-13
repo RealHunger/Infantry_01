@@ -100,15 +100,15 @@ void chassis_task_func(void const * argument) {
                 can_raw_102[0], can_raw_102[1], can_raw_102[2], can_raw_102[3],
                 can_raw_102[4], can_raw_102[5], can_raw_102[6], can_raw_102[7],
                 // 解析后的黄金数据：
-                gateway_data.game_progress,
-                gateway_data.stage_remain_time,
-                gateway_data.place_status,
-                gateway_data.current_HP,
-                gateway_data.shooter_17mm_barrel_heat,
-                gateway_data.buffer_energy,
-                gateway_data.allow_bullet_17,
-                gateway_data.armor_id,
-                gateway_data.HP_deducation_reason
+                robot_ctrl.gateway_referee_t.game_progress,
+                robot_ctrl.gateway_referee_t.stage_remain_time,
+                robot_ctrl.gateway_referee_t.place_status,
+                robot_ctrl.gateway_referee_t.current_HP,
+                robot_ctrl.gateway_referee_t.shooter_17mm_barrel_heat,
+                robot_ctrl.gateway_referee_t.buffer_energy,
+                robot_ctrl.gateway_referee_t.allow_bullet_17,
+                robot_ctrl.gateway_referee_t.armor_id,
+                robot_ctrl.gateway_referee_t.HP_deducation_reason
                 );
             }
             last_gateway_print_tick = current_tick;
