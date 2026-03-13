@@ -113,7 +113,6 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   bsp_can_init();
-  RC_Init();
   Robot_Global_Init();
   /* USER CODE END 2 */
 

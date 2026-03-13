@@ -69,6 +69,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         ALL_Task/chassis_task.h
         ALL_Task/gimbal_task.c
         ALL_Task/gimbal_task.h
+        Components/referee/referee.h
+        Components/referee/referee.c
 )
 
 # Add STM32CubeMX generated sources

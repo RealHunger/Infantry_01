@@ -107,55 +107,57 @@ static void RC_Data_Parse(volatile const uint8_t *p_frame)
  * @brief USART6 中断服务函数
  * 需在 stm32xxxx_it.c 中调用或直接定义
  */
-void USART6_IRQHandler(void)
-{
-    if (huart6.Instance->SR & UART_FLAG_IDLE)
-    {
-        __HAL_UART_CLEAR_IDLEFLAG(&huart6);
-
-        uint16_t rx_len;
-        // 检查当前 DMA 正在向哪个 Memory 写入
-        uint8_t current_mem = (hdma_usart6_rx.Instance->CR & DMA_SxCR_CT) ? 1 : 0;
-
-        // 停止 DMA 以重置计数器
-        __HAL_DMA_DISABLE(&hdma_usart6_rx);
-        rx_len = RC_RX_BUF_SIZE - hdma_usart6_rx.Instance->NDTR;
-        hdma_usart6_rx.Instance->NDTR = RC_RX_BUF_SIZE;
-
-        // 切换缓冲区目标
-        if (current_mem == 0) hdma_usart6_rx.Instance->CR |= DMA_SxCR_CT;
-        else hdma_usart6_rx.Instance->CR &= ~DMA_SxCR_CT;
-
-        __HAL_DMA_ENABLE(&hdma_usart6_rx);
-
-        // 只有长度匹配才解析 (21字节)
-        if (rx_len == RC_FRAME_LENGTH)
-        {
-            RC_Data_Parse(rc_rx_buf[current_mem]);
-        }
-    }
-}
+////  现在空闲中断函数被裁判系统接收占用了喵
+// void USART6_IRQHandler(void)
+// {
+//     if (huart6.Instance->SR & UART_FLAG_IDLE)
+//     {
+//         __HAL_UART_CLEAR_IDLEFLAG(&huart6);
+//
+//         uint16_t rx_len;
+//         // 检查当前 DMA 正在向哪个 Memory 写入
+//         uint8_t current_mem = (hdma_usart6_rx.Instance->CR & DMA_SxCR_CT) ? 1 : 0;
+//
+//         // 停止 DMA 以重置计数器
+//         __HAL_DMA_DISABLE(&hdma_usart6_rx);
+//         rx_len = RC_RX_BUF_SIZE - hdma_usart6_rx.Instance->NDTR;
+//         hdma_usart6_rx.Instance->NDTR = RC_RX_BUF_SIZE;
+//
+//         // 切换缓冲区目标
+//         if (current_mem == 0) hdma_usart6_rx.Instance->CR |= DMA_SxCR_CT;
+//         else hdma_usart6_rx.Instance->CR &= ~DMA_SxCR_CT;
+//
+//         __HAL_DMA_ENABLE(&hdma_usart6_rx);
+//
+//         // 只有长度匹配才解析 (21字节)
+//         if (rx_len == RC_FRAME_LENGTH)
+//         {
+//             RC_Data_Parse(rc_rx_buf[current_mem]);
+//         }
+//     }
+// }
 
 /**
  * @brief 遥控器接收初始化 (USART6 + DMA 双缓冲)
  */
-void RC_Init(void)
-{
-    // 使能串口 DMA 接收和空闲中断
-    SET_BIT(huart6.Instance->CR3, USART_CR3_DMAR);
-    __HAL_UART_ENABLE_IT(&huart6, UART_IT_IDLE);
-
-    // 配置 DMA
-    __HAL_DMA_DISABLE(&hdma_usart6_rx);
-    hdma_usart6_rx.Instance->PAR = (uint32_t) & (USART6->DR);
-    hdma_usart6_rx.Instance->M0AR = (uint32_t)(rc_rx_buf[0]);
-    hdma_usart6_rx.Instance->M1AR = (uint32_t)(rc_rx_buf[1]);
-    hdma_usart6_rx.Instance->NDTR = RC_RX_BUF_SIZE;
-
-    // 开启双缓冲模式
-    SET_BIT(hdma_usart6_rx.Instance->CR, DMA_SxCR_DBM);
-    __HAL_DMA_ENABLE(&hdma_usart6_rx);
-}
+//把防止错误调用usart6
+// void RC_Init(void)
+// {
+//     // 使能串口 DMA 接收和空闲中断
+//     SET_BIT(huart6.Instance->CR3, USART_CR3_DMAR);
+//     __HAL_UART_ENABLE_IT(&huart6, UART_IT_IDLE);
+//
+//     // 配置 DMA
+//     __HAL_DMA_DISABLE(&hdma_usart6_rx);
+//     hdma_usart6_rx.Instance->PAR = (uint32_t) & (USART6->DR);
+//     hdma_usart6_rx.Instance->M0AR = (uint32_t)(rc_rx_buf[0]);
+//     hdma_usart6_rx.Instance->M1AR = (uint32_t)(rc_rx_buf[1]);
+//     hdma_usart6_rx.Instance->NDTR = RC_RX_BUF_SIZE;
+//
+//     // 开启双缓冲模式
+//     SET_BIT(hdma_usart6_rx.Instance->CR, DMA_SxCR_DBM);
+//     __HAL_DMA_ENABLE(&hdma_usart6_rx);
+// }
 
 void RC_Unable(void) { __HAL_UART_DISABLE(&huart6); }
 const RC_ctrl_t *RC_Get_Handle(void) { return &remote_ctrl; }
