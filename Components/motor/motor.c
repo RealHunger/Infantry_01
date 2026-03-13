@@ -1470,6 +1470,31 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
     /* --- 处理 CAN2 总线 (达妙 + 发射机构) --- */
     if (hcan == &hcan2) {
 
+        // 1. 达妙电机反馈 (达妙反馈 ID 通常为 0x00，内部通过 Data[0] 区分 ID)
+        if (rx_header.StdId == 0x00) {
+            struct motor_device *dm = motor_get_device("J4310_PITCH");
+            // 校验反馈帧中的 ID 是否匹配实例 ID
+            if (dm && (rx_data[0] & 0x0F) == dm->motor_id) {
+                dm->get_measure(dm, rx_data);
+            }
+        }
+        // 2. 大疆电机反馈 (Shoot_L/R 挂在 CAN2, ID 为 0x201/0x202)
+        else if (rx_header.StdId >= 0x201 && rx_header.StdId <= 0x208) {
+            for (int i = 0; i < MOTOR_COUNT; i++) {
+                if (motor_list[i] &&
+                    motor_list[i]->motor_id == rx_header.StdId &&
+                    motor_list[i]->motor_can_handle == &hcan2) {
+                    motor_list[i]->get_measure(motor_list[i], rx_data);
+                    break;
+                    }
+            }
+        }
+        return;
+    }
+
+    /* --- 处理 CAN1 总线 (大疆底盘、云台、拨弹) --- */
+    if (hcan == &hcan1) {
+
         //新增一下拦截解析下位C板数据信息的can信息解析，对应ID为 0x101
         if (rx_header.StdId == 0x101) {
             cnt ++ ;
@@ -1503,31 +1528,6 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
             robot_ctrl.gateway_referee_t.game_progress = rx_data[3] & 0x0F;
         }
 
-
-        // 1. 达妙电机反馈 (达妙反馈 ID 通常为 0x00，内部通过 Data[0] 区分 ID)
-        if (rx_header.StdId == 0x00) {
-            struct motor_device *dm = motor_get_device("J4310_PITCH");
-            // 校验反馈帧中的 ID 是否匹配实例 ID
-            if (dm && (rx_data[0] & 0x0F) == dm->motor_id) {
-                dm->get_measure(dm, rx_data);
-            }
-        }
-        // 2. 大疆电机反馈 (Shoot_L/R 挂在 CAN2, ID 为 0x201/0x202)
-        else if (rx_header.StdId >= 0x201 && rx_header.StdId <= 0x208) {
-            for (int i = 0; i < MOTOR_COUNT; i++) {
-                if (motor_list[i] &&
-                    motor_list[i]->motor_id == rx_header.StdId &&
-                    motor_list[i]->motor_can_handle == &hcan2) {
-                    motor_list[i]->get_measure(motor_list[i], rx_data);
-                    break;
-                    }
-            }
-        }
-        return;
-    }
-
-    /* --- 处理 CAN1 总线 (大疆底盘、云台、拨弹) --- */
-    if (hcan == &hcan1) {
         // 大疆 ID 范围解析
         if (rx_header.StdId >= 0x201 && rx_header.StdId <= 0x208) {
             for (int i = 0; i < MOTOR_COUNT; i++) {
