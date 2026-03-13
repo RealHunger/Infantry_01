@@ -15,7 +15,7 @@
 #define MOUSE_PIT_SENS          0.0002f  // 鼠标纵向灵敏度
 #define FOLLOW_P_GAIN           0.5f
 #define RC_DEADZONE             10
-#define YAW_CENTER_OFFSET       0.0f
+#define YAW_CENTER_OFFSET       1.9f//-0.13f（步兵） //1.9f（哨兵）
 
 // 底盘几何参数配置
 #define MOTOR_RPM_TO_VECTOR     3000.0f
@@ -38,10 +38,15 @@ static uint8_t last_wheel_active = 0;    // 上一帧拨轮是否激活
 static uint8_t last_qe_active = 0;       // 上一帧Q/E是否激活
 static uint8_t yaw_align_enable = 0;     // 回正使能标志（1=需要回正，0=不需要）
 static float last_manual_vw = 0.0f;      // 保存「拨轮/Q/E」松开前的最后有效旋转速度（统一变量，避免冲突）
+// 新增：Q/E 按键切换状态与防抖记录（用于实现按键切换而非持续按住）
+static uint8_t left_rotate_toggle = 0;   // Q键切换：左旋状态（1=左旋开启）
+static uint8_t right_rotate_toggle = 0;  // E键切换：右旋状态（1=右旋开启）
+static uint8_t last_q_pressed = 0;       // 上一帧 Q 键状态（防抖）
+static uint8_t last_e_pressed = 0;       // 上一帧 E 键状态（防抖）
 
 static float Rad_Format(float angle) {
-    while (angle >  M_PI) angle -= 2.0f * M_PI;
-    while (angle < -M_PI) angle += 2.0f * M_PI;
+    while (angle >  (float)M_PI) angle -= 2.0f * (float)M_PI;
+    while (angle < -(float)M_PI) angle += 2.0f * (float)M_PI;
     return angle;
 }
 
@@ -83,11 +88,16 @@ void chassis_task_func(void const * argument) {
             last_wheel_active = 0;
             last_qe_active = 0;
             last_manual_vw = 0.0f;
+            // 清除 Q/E 切换态与按键防抖，避免断线后滞留旋转状态
+            left_rotate_toggle = 0;
+            right_rotate_toggle = 0;
+            last_q_pressed = 0;
+            last_e_pressed = 0;
         } else {
             robot_ctrl.monitor.remote_online = 1;
             /**********************************************************************************************************/
             // 底盘模式切换
-            uint8_t toggle_cmd = (rc->vt13.key_vt13.v & KEY_VT13_CTRL) || rc->vt13.rc_vt13.custom_r;
+            uint8_t toggle_cmd = (KEY_PRESSED(rc->vt13.key_vt13.v, KEY_VT13_CTRL) || rc->vt13.rc_vt13.custom_r);
             uint8_t toggle_trigger = (toggle_cmd && !last_toggle_cmd);
 
             if (toggle_trigger) {
@@ -98,6 +108,11 @@ void chassis_task_func(void const * argument) {
                     last_wheel_active = 0;
                     last_qe_active = 0;
                     last_manual_vw = 0.0f;
+                    // 切换到放松时也清除 Q/E 切换态与防抖
+                    left_rotate_toggle = 0;
+                    right_rotate_toggle = 0;
+                    last_q_pressed = 0;
+                    last_e_pressed = 0;
                 } else {
                     robot_ctrl.chassis_mode = CHASSIS_FOLLOW;
                 }
@@ -111,19 +126,40 @@ void chassis_task_func(void const * argument) {
             if (robot_ctrl.chassis_mode != CHASSIS_RELAX) {
                 if (robot_ctrl.chassis_mode == CHASSIS_FOLLOW) {
                     // --- A. 输入源融合 (遥控器摇杆 + 键盘) ---
-                    float vx_rc = (abs(rc->vt13.rc_vt13.ch[0]) > RC_DEADZONE) ? rc->vt13.rc_vt13.ch[0] / 660.0f : 0;
-                    float vy_rc = (abs(rc->vt13.rc_vt13.ch[1]) > RC_DEADZONE) ? rc->vt13.rc_vt13.ch[1] / 660.0f : 0;
-                    float vw_rc = (abs(rc->vt13.rc_vt13.wheel) > RC_DEADZONE) ? rc->vt13.rc_vt13.wheel / 660.0f : 0;
+                    float vx_rc = (abs(rc->vt13.rc_vt13.ch[0]) > RC_DEADZONE) ? ((float)rc->vt13.rc_vt13.ch[0] / 660.0f) : 0.0f;
+                    float vy_rc = (abs(rc->vt13.rc_vt13.ch[1]) > RC_DEADZONE) ? ((float)rc->vt13.rc_vt13.ch[1] / 660.0f) : 0.0f;
+                    float vw_rc = (abs(rc->vt13.rc_vt13.wheel) > RC_DEADZONE) ? ((float)rc->vt13.rc_vt13.wheel / 660.0f) : 0.0f;
 
-                    float vx_kb = 0, vy_kb = 0, vw_kb = 0;
-                    float speed_ratio = (rc->vt13.key_vt13.v & KEY_VT13_SHIFT) ? 1.0f : 0.5f;
+                    float vx_kb = 0.0f, vy_kb = 0.0f, vw_kb = 0.0f;
+                    float speed_ratio = KEY_PRESSED(rc->vt13.key_vt13.v, KEY_VT13_SHIFT) ? 0.7f : 0.5f;
 
-                    if (rc->vt13.key_vt13.v & KEY_VT13_W) vy_kb += speed_ratio;
-                    if (rc->vt13.key_vt13.v & KEY_VT13_S) vy_kb -= speed_ratio;
-                    if (rc->vt13.key_vt13.v & KEY_VT13_A) vx_kb -= speed_ratio;
-                    if (rc->vt13.key_vt13.v & KEY_VT13_D) vx_kb += speed_ratio;
-                    if (rc->vt13.key_vt13.v & KEY_VT13_Q) vw_kb -= 2.0f * speed_ratio; // 手动左旋
-                    if (rc->vt13.key_vt13.v & KEY_VT13_E) vw_kb += 2.0f * speed_ratio; // 手动右旋
+                    if (KEY_PRESSED(rc->vt13.key_vt13.v, KEY_VT13_W)) vy_kb += speed_ratio;
+                    if (KEY_PRESSED(rc->vt13.key_vt13.v, KEY_VT13_S)) vy_kb -= speed_ratio;
+                    if (KEY_PRESSED(rc->vt13.key_vt13.v, KEY_VT13_A)) vx_kb -= speed_ratio;
+                    if (KEY_PRESSED(rc->vt13.key_vt13.v, KEY_VT13_D)) vx_kb += speed_ratio;
+
+                    // Q/E: 切换式按键（按一次切换左旋/右旋状态），使用上升沿检测实现防抖
+                    uint8_t q_pressed = KEY_PRESSED(rc->vt13.key_vt13.v, KEY_VT13_Q);
+                    uint8_t e_pressed = KEY_PRESSED(rc->vt13.key_vt13.v, KEY_VT13_E);
+                    uint8_t q_trigger = (q_pressed && !last_q_pressed); // Q 上升沿
+                    uint8_t e_trigger = (e_pressed && !last_e_pressed); // E 上升沿
+
+                    if (q_trigger) {
+                        left_rotate_toggle = !left_rotate_toggle;    // 切换左旋状态
+                        if (left_rotate_toggle) right_rotate_toggle = 0; // 互斥，打开左则关闭右
+                    }
+                    if (e_trigger) {
+                        right_rotate_toggle = !right_rotate_toggle;  // 切换右旋状态
+                        if (right_rotate_toggle) left_rotate_toggle = 0; // 互斥，打开右则关闭左
+                    }
+
+                    // 根据切换状态设置 vw_kb 为固定手动速度（与 speed_ratio 同量级），或保持为 0
+                    if (left_rotate_toggle) vw_kb = -speed_ratio;
+                    else if (right_rotate_toggle) vw_kb = speed_ratio;
+
+                    // 更新上一帧按键状态（防抖记录）
+                    last_q_pressed = q_pressed;
+                    last_e_pressed = e_pressed;
 
                     float total_vx = vx_rc + vx_kb;
                     float total_vy = vy_rc + vy_kb;
@@ -209,3 +245,4 @@ void chassis_task_func(void const * argument) {
         osDelay(2);
     }
 }
+

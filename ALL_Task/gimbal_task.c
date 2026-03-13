@@ -79,9 +79,8 @@ void gimbal_task_func(void const * argument) {
     /**************************************** 【静态状态变量区 - 防抖/状态机/计时专用，无冗余】 ****************************************/
     static uint8_t last_relax_toggle = 0;    // 云台失能模式按键 上一帧状态 - 按键防抖，防止误触
     static uint8_t last_mode_toggle = 0;     // 云台模式切换按键 上一帧状态 - 按键防抖，防止误触
+    static uint8_t last_shoot_toggle = 0;       // 发射命令 上一帧状态 - 用于自瞄连续开火计数
     static uint8_t is_initialized = 0;       // 云台初始化标志位 0-未初始化 1-已初始化 防止上电瞬间角度突变甩动
-    static uint8_t last_f_key = 0;           // F发射键 上一帧状态 - 按键防抖
-    static uint8_t last_sw_state = RC_SW_N_VT13;  // VT13遥控器档位开关 上一帧状态 - 档位防抖
     // 拨弹轮状态机枚举：正常发射/堵转判定中/反转逃逸中 三段式状态机，卡弹处理核心逻辑
     static enum { STIR_NORMAL, STIR_BLOCKING, STIR_REVERSING } stir_state = STIR_NORMAL;
     static uint32_t block_start_tick = 0;    // 堵转开始时刻系统滴答值 - 用于累计堵转时间
@@ -125,22 +124,26 @@ void gimbal_task_func(void const * argument) {
 
             /********************* 发射模式切换：F按键/遥控器档位 双路切换 *********************/
             // VT13 F键按下且防抖：发射就绪 ↔ 发射停止 切换
-            if ((robot_ctrl.rc->vt13.key_vt13.v & KEY_VT13_F) && !last_f_key) {
+            /* KEY_VT13_F is 0x0200 (uint16_t). If we assign the raw bitmask directly to a uint8_t
+               it will be truncated to 0. Convert to a 0/1 boolean explicitly to avoid this bug. */
+            uint8_t shoot_ready_cmd = KEY_PRESSED(robot_ctrl.rc->vt13.key_vt13.v, KEY_VT13_F);
+            uint8_t shoot_trigger = (shoot_ready_cmd && !last_shoot_toggle);     // 按键上升沿触发，防抖
+            if (shoot_trigger) {
                 robot_ctrl.shoot_mode = (robot_ctrl.shoot_mode == SHOOT_STOP) ? SHOOT_READY : SHOOT_STOP;
             }
-            last_f_key = (robot_ctrl.rc->vt13.key_vt13.v & KEY_VT13_F);  // 更新VT13 F键上一帧状态，用于防抖
+            last_shoot_toggle = shoot_ready_cmd; // 更新发射按键上一帧状态，用于防抖
 
-            // VT13遥控器档位切换：S档(发射档) ↔ 其他档 切换，优先级与F键一致
-            if (robot_ctrl.rc->vt13.rc_vt13.sw != last_sw_state) {
-                robot_ctrl.shoot_mode = (robot_ctrl.rc->vt13.rc_vt13.sw == RC_SW_S_VT13) ? SHOOT_READY : SHOOT_STOP;
-                last_sw_state = robot_ctrl.rc->vt13.rc_vt13.sw;     // 更新档位上一帧状态，用于防抖
-            }
+            // // VT13遥控器档位切换：S档(发射档) ↔ 其他档 切换，优先级与F键一致
+            // if (robot_ctrl.rc->vt13.rc_vt13.sw != last_sw_state) {
+            //     robot_ctrl.shoot_mode = (robot_ctrl.rc->vt13.rc_vt13.sw == RC_SW_S_VT13) ? SHOOT_READY : SHOOT_STOP;
+            //     last_sw_state = robot_ctrl.rc->vt13.rc_vt13.sw;     // 更新档位上一帧状态，用于防抖
+            // }
             /********************* 云台工作模式切换：失能 ↔ 手动 ↔ 自瞄 *********************/
             // 云台失能模式触发条件：VT13遥控器暂停键 或 VT13 C键 按下
-            uint8_t relax_cmd = (robot_ctrl.rc->vt13.rc_vt13.pause) || (robot_ctrl.rc->vt13.key_vt13.v & KEY_VT13_C);
+            uint8_t relax_cmd = (robot_ctrl.rc->vt13.rc_vt13.pause) || KEY_PRESSED(robot_ctrl.rc->vt13.key_vt13.v, KEY_VT13_C);
             uint8_t relax_trigger = (relax_cmd && !last_relax_toggle); // 按键上升沿触发，防抖
-            // 云台模式切换条件：VT13遥控器自定义左按键 或 VT13 G键 按下 (仅在非失能模式下生效)
-            uint8_t mode_cmd = (robot_ctrl.rc->vt13.rc_vt13.custom_l) || (robot_ctrl.rc->vt13.key_vt13.v & KEY_VT13_G);
+            // 云台模式切换条件：VT13遥控器自定义左按键 或 鼠标右键 按下 (原先为 VT13 G 键)
+            uint8_t mode_cmd = (robot_ctrl.rc->vt13.rc_vt13.custom_l) || (robot_ctrl.rc->vt13.mouse_vt13.press_r);
             uint8_t mode_trigger = (mode_cmd && !last_mode_toggle);     // 按键上升沿触发，防抖
 
             // 触发放松切换：失能 ↔ 手动 互切，同时清零初始化标志位，重连后防甩动
@@ -323,3 +326,4 @@ void gimbal_task_func(void const * argument) {
         osDelay(2);  // 云台任务调度周期 2ms，固定频率保证控制精度
     }
 }
+

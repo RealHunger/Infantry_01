@@ -81,6 +81,11 @@
 #define KEY_VT13_V               ((uint16_t)0x4000)
 #define KEY_VT13_B               ((uint16_t)0x8000)
 
+/* Helper macro: evaluate a key bitmask against a value and return 0 or 1.
+   Use this instead of assigning (v & KEY) directly to a uint8_t to avoid
+   truncation when KEY has bits above 0x00FF. */
+#define KEY_PRESSED(v, k)        (((v) & (k)) ? 1 : 0)
+
 /******************************************************************************************
  *                                   VT13 原始数据结构体 (21 Bytes，原VT13保留)
  ******************************************************************************************/
@@ -178,3 +183,4 @@ void RC_Unable_DT7(void);
 void RC_Unable_VT13(void);
 
 #endif
+
