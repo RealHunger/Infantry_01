@@ -7,7 +7,7 @@
 extern UART_HandleTypeDef huart6;
 extern DMA_HandleTypeDef hdma_usart6_rx;
 extern DMA_HandleTypeDef hdma_usart6_tx;
-extern CAN_HandleTypeDef hcan2; // 声明外部的 CAN2 句柄
+extern CAN_HandleTypeDef hcan1; // 声明外部的 CAN2 句柄
 
 referee_info_t referee_data;
 uint8_t ref_rx_buf[2][REF_RX_BUF_SIZE];
@@ -397,7 +397,7 @@ void Referee_CAN_Forward(void) {
     tx_data[6] = (referee_data.game_status.stage_remain_time >> 8) & 0xFF;
     tx_data[7] = referee_data.game_status.stage_remain_time & 0xFF;
 
-    HAL_CAN_AddTxMessage(&hcan2, &tx_header, tx_data, &send_mail_box);
+    HAL_CAN_AddTxMessage(&hcan1, &tx_header, tx_data, &send_mail_box);
 
 
     // ==========================================
@@ -421,6 +421,6 @@ void Referee_CAN_Forward(void) {
                   (referee_data.game_status.game_progress & 0x0F);
 
     // 塞进 CAN2 邮箱
-    HAL_CAN_AddTxMessage(&hcan2, &tx_header, tx_data2, &send_mail_box);
+    HAL_CAN_AddTxMessage(&hcan1, &tx_header, tx_data2, &send_mail_box);
 
 }
