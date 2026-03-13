@@ -11,6 +11,8 @@
 #include "cmsis_os.h"
 #include "../../Bsp/LED/bsp_LED.h"
 
+//协作测试
+
 #define pi (fp32)M_PI
 
 extern CAN_HandleTypeDef hcan1;
