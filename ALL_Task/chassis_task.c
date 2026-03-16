@@ -46,7 +46,7 @@ static uint8_t right_rotate_toggle = 0;  // E键切换：右旋状态（1=右旋
 static uint8_t last_q_pressed = 0;       // 上一帧 Q 键状态（防抖）
 static uint8_t last_e_pressed = 0;       // 上一帧 E 键状态（防抖）
 
-float virtual_yaw_angle = 0.0f;
+float virtual_yaw_angle = 0.0f;        //虚拟主方向
 
 uint16_t cnt = 0;
 
