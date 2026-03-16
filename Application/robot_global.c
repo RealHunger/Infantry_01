@@ -18,6 +18,7 @@ void Robot_Global_Init(void) {
     robot_ctrl.gimbal_mode  = GIMBAL_RELAX;
     robot_ctrl.chassis_mode = CHASSIS_RELAX;
     robot_ctrl.shoot_mode   = SHOOT_STOP;
+    robot_ctrl.shaobing_mode= 1;
 
     RC_Init();
 

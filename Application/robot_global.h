@@ -31,6 +31,7 @@ typedef struct {
     gimbal_mode_e  gimbal_mode;
     chassis_mode_e chassis_mode;
     shoot_mode_e   shoot_mode;
+    uint8_t        shaobing_mode;
 
     // 2. 云台姿态反馈数据 (由 Sensor Task 更新)
     struct {

@@ -7,4 +7,5 @@
 
 void gimbal_task_func(void const * argument);
 
+extern  float yaw_angle_integrate;
 #endif //INFANTRY_01_GIMBAL_TASK_H
