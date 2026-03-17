@@ -3,6 +3,7 @@
 #include "string.h"
 #include "cmsis_os.h"
 #include "D:/all_code/clion/infantry/Bsp//uart/bsp_uart.h"
+#include "../../Bsp/LED/bsp_LED.h"
 
 extern UART_HandleTypeDef huart6;
 extern DMA_HandleTypeDef hdma_usart6_rx;
@@ -319,6 +320,8 @@ void Referee_Send_Packet(uint16_t cmd_id, uint8_t *data, uint16_t data_len) {
 void Referee_Debug_Print(void) {
     static struct uart_device *uart1 = NULL;
     static uint32_t last_print_tick = 0;
+
+    LED_GREEN_SET();
 
     // 1. 获取封装好的 USART1 DMA 实例
     if (uart1 == NULL) {
