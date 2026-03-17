@@ -222,7 +222,8 @@ void chassis_task_func(void const * argument) {
                     // --- C. 跟随与旋转逻辑（扩展：Q/E+拨轮统一回正）---
                     float yaw_m_pos;
                     yaw_m->get_status(yaw_m, "POS", &yaw_m_pos);
-                    virtual_yaw_angle = yaw_m_pos - yaw_angle_integrate;
+//                    yaw_angle_integrate = 0.0f;
+                    virtual_yaw_angle = Rad_Format(yaw_m_pos - yaw_angle_integrate);
                     float angle_error = Rad_Format(virtual_yaw_angle - YAW_CENTER_OFFSET);
 
                     // 步骤1：判断当前拨轮、Q/E是否处于激活状态
