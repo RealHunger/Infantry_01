@@ -14,7 +14,6 @@ typedef struct {
     float auto_front_speed;   //小电脑下发前后速度
     float auto_right_speed;  //小电脑下发左右速度
     float auto_yaw_speed;     //小电脑下发云台yaw轴速度
-    //float auto_pitch_speed;   //小电脑下发云台pitch轴速度
 
 } target_info_t;
 

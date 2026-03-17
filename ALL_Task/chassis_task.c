@@ -83,40 +83,40 @@ void chassis_task_func(void const * argument) {
     while (1) {
         uint32_t current_tick = osKernelSysTick();
 
-        //打印接受的数据
-        static uint32_t last_gateway_print_tick = 0;
-        if (current_tick - last_gateway_print_tick > 500) {
-            struct uart_device *uart1 = uart_get_device("uart1_dma");
-            if (uart1 != NULL) {
-                uart1->Print(uart1,
-                "====== MAIN BOARD CAN RX TEST ======\r\n"
-                " [Test] CAN_Cnt: %d \r\n"
-                " [RAW 101]: %02X %02X %02X %02X %02X %02X %02X %02X \r\n"
-                " [RAW 102]: %02X %02X %02X %02X %02X %02X %02X %02X \r\n"
-                "------------------------------------\r\n"
-                "  > Game : Prog: %d | Time: %d s | Place: %d\r\n"
-                "  > State: HP: %d | Heat: %d | Buf: %d J\r\n"
-                "  > Shoot: Allow17: %d | ArmorID: %d | Hurt: %d\r\n"
-                "====================================\r\n\r\n",
-                cnt,
-                can_raw_101[0], can_raw_101[1], can_raw_101[2], can_raw_101[3],
-                can_raw_101[4], can_raw_101[5], can_raw_101[6], can_raw_101[7],
-                can_raw_102[0], can_raw_102[1], can_raw_102[2], can_raw_102[3],
-                can_raw_102[4], can_raw_102[5], can_raw_102[6], can_raw_102[7],
-                // 解析后的黄金数据：
-                robot_ctrl.gateway_referee_t.game_progress,
-                robot_ctrl.gateway_referee_t.stage_remain_time,
-                robot_ctrl.gateway_referee_t.place_status,
-                robot_ctrl.gateway_referee_t.current_HP,
-                robot_ctrl.gateway_referee_t.shooter_17mm_barrel_heat,
-                robot_ctrl.gateway_referee_t.buffer_energy,
-                robot_ctrl.gateway_referee_t.allow_bullet_17,
-                robot_ctrl.gateway_referee_t.armor_id,
-                robot_ctrl.gateway_referee_t.HP_deducation_reason
-                );
-            }
-            last_gateway_print_tick = current_tick;
-        }
+        // //打印接受的数据
+        // static uint32_t last_gateway_print_tick = 0;
+        // if (current_tick - last_gateway_print_tick > 500) {
+        //     struct uart_device *uart1 = uart_get_device("uart1_dma");
+        //     if (uart1 != NULL) {
+        //         uart1->Print(uart1,
+        //         "====== MAIN BOARD CAN RX TEST ======\r\n"
+        //         " [Test] CAN_Cnt: %d \r\n"
+        //         " [RAW 101]: %02X %02X %02X %02X %02X %02X %02X %02X \r\n"
+        //         " [RAW 102]: %02X %02X %02X %02X %02X %02X %02X %02X \r\n"
+        //         "------------------------------------\r\n"
+        //         "  > Game : Prog: %d | Time: %d s | Place: %d\r\n"
+        //         "  > State: HP: %d | Heat: %d | Buf: %d J\r\n"
+        //         "  > Shoot: Allow17: %d | ArmorID: %d | Hurt: %d\r\n"
+        //         "====================================\r\n\r\n",
+        //         cnt,
+        //         can_raw_101[0], can_raw_101[1], can_raw_101[2], can_raw_101[3],
+        //         can_raw_101[4], can_raw_101[5], can_raw_101[6], can_raw_101[7],
+        //         can_raw_102[0], can_raw_102[1], can_raw_102[2], can_raw_102[3],
+        //         can_raw_102[4], can_raw_102[5], can_raw_102[6], can_raw_102[7],
+        //         // 解析后的黄金数据：
+        //         robot_ctrl.gateway_referee_t.game_progress,
+        //         robot_ctrl.gateway_referee_t.stage_remain_time,
+        //         robot_ctrl.gateway_referee_t.place_status,
+        //         robot_ctrl.gateway_referee_t.current_HP,
+        //         robot_ctrl.gateway_referee_t.shooter_17mm_barrel_heat,
+        //         robot_ctrl.gateway_referee_t.buffer_energy,
+        //         robot_ctrl.gateway_referee_t.allow_bullet_17,
+        //         robot_ctrl.gateway_referee_t.armor_id,
+        //         robot_ctrl.gateway_referee_t.HP_deducation_reason
+        //         );
+        //     }
+        //     last_gateway_print_tick = current_tick;
+        // }
 
         /**************************************************************************************************************/
         // 遥控器掉线检测
@@ -208,8 +208,8 @@ void chassis_task_func(void const * argument) {
                     //哨兵自动挡
                     if (robot_ctrl.shaobing_mode == 1)
                     {
-                        total_vx = total_vx + robot_ctrl.target_info.auto_front_speed;
-                        total_vy = total_vy + robot_ctrl.target_info.auto_right_speed;
+                    total_vx = total_vx + robot_ctrl.target_info.auto_front_speed;
+                    total_vy = total_vy + robot_ctrl.target_info.auto_right_speed;
                     }
 
                     // --- B. 各向同性限速 ---
