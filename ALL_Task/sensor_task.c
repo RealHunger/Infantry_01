@@ -83,17 +83,8 @@ void sensor_task_func(void const * argument) {
         //          [7]血量, [8]17mm热量, [9]缓冲能量, [10]允许发弹量,
         //          [11]受击装甲板ID, [12]扣血原因
         // =========================================================================
-        Usb->Print(Usb, "%.3f,%.3f,%.3f,%.3f,%d,%d,%d,%d,%d,%d,%d,%d,%d\r\n",
-                   INS_q[0], INS_q[1], INS_q[2], INS_q[3],
-                   robot_ctrl.gateway_referee_t.game_progress,
-                   robot_ctrl.gateway_referee_t.stage_remain_time,
-                   robot_ctrl.gateway_referee_t.place_status,
-                   robot_ctrl.gateway_referee_t.current_HP,
-                   robot_ctrl.gateway_referee_t.shooter_17mm_barrel_heat,
-                   robot_ctrl.gateway_referee_t.buffer_energy,
-                   robot_ctrl.gateway_referee_t.allow_bullet_17,
-                   robot_ctrl.gateway_referee_t.armor_id,
-                   robot_ctrl.gateway_referee_t.HP_deducation_reason);
+        Usb->Print(Usb, "%.3f,%.3f,%.3f,%.3f\r\n",
+                   INS_q[0], INS_q[1], INS_q[2], INS_q[3]);
         //Uart->Print(Uart,"%d\r\n", robot_ctrl.rc->dt7.rc_dt7.ch[0]);
 
         vTaskDelay(1);
