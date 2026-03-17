@@ -192,7 +192,7 @@ void gimbal_task_func(void const * argument) {
 
                     if (robot_ctrl.shaobing_mode == 1)
                     {
-                        world_yaw_target = robot_ctrl.target_info.auto_yaw_speed;
+                        world_yaw_target = world_yaw_target + robot_ctrl.target_info.auto_yaw_speed;
                         yaw_angle_integrate = robot_ctrl.target_info.auto_yaw_speed;
                     }
 

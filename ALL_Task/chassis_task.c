@@ -208,8 +208,8 @@ void chassis_task_func(void const * argument) {
                     //哨兵自动挡
                     if (robot_ctrl.shaobing_mode == 1)
                     {
-                        total_vx = robot_ctrl.target_info.auto_front_speed;
-                        total_vy = robot_ctrl.target_info.auto_right_speed;
+                        total_vx = total_vx + robot_ctrl.target_info.auto_front_speed;
+                        total_vy = total_vy + robot_ctrl.target_info.auto_right_speed;
                     }
 
                     // --- B. 各向同性限速 ---
