@@ -1372,15 +1372,32 @@ void DJI_Motor_Send_CAN1_Group(CAN_HandleTypeDef *hcan) {
     };
     uint32_t mailbox;
 
+    //开始加入功率分配
+    int16_t chassis_raw_data[4][2] = {0};  // 存储pid计算得到的电流, 当前转速
+    int16_t reallocated_cur[4] = {0};      // 保存重分配后的电流
+    struct M3508_data *chassis_ptrs[4] = {NULL};
+
     /* 2. 组 0x200 帧：底盘 M3508 电机 (ID: 1, 2, 3, 4) */
     for (int i = 0; i < 4; i++) {
         char name[32];
         sprintf(name, "M3508_CHASSIS_%d", i + 1);
         struct motor_device *m = motor_get_device(name);
+
         if (m && m->motor_data) {
-            struct M3508_data *d = (struct M3508_data *)m->motor_data;
-            int16_t out = (d->enable_flag) ? d->_current_output : 0;
-            // 大疆协议：高位在前 (Big-Endian)
+            chassis_ptrs[i] = (struct M3508_data *)m->motor_data;
+            // 获取pid电流
+            chassis_raw_data[i][0] = (chassis_ptrs[i]->enable_flag) ? chassis_ptrs[i]->_current_output : 0;
+            // 获取反馈转速
+            chassis_raw_data[i][1] = chassis_ptrs[i]->VEL;
+        }
+    }
+
+    extern double RLS_argument[6];
+    float current_power_max = 45.0f;
+
+    for (int i = 0; i < 4; i++) {
+        if (chassis_ptrs[i]) {
+            int16_t out = reallocated_cur[i]; // 取出限制后的安全电流
             tx_200[i*2]   = (uint8_t)(out >> 8);
             tx_200[i*2+1] = (uint8_t)(out & 0xFF);
         }

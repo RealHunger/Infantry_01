@@ -70,6 +70,10 @@ add_executable(${CMAKE_PROJECT_NAME}
         ALL_Task/gimbal_task.c
         ALL_Task/gimbal_task.h
         Application/auto_aim.c
+        Bsp/RLS/RLS.c
+        Bsp/RLS/RLS.h
+        Components/power_reallocate.c
+        Components/power_reallocate.h
 )
 
 # Add STM32CubeMX generated sources
