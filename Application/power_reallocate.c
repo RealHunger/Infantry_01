@@ -35,38 +35,33 @@ void Chassis_Power_Control_Loop(
     float real_power_fb, float current_energy,
     const Power_Allocate_Config_t *config, int16_t safe_current_out[4])
 {
-    // ------------------------------------------------------------------------
-    // 步骤一：提取聚合特征，进行 RLS 在线辨识 (闭环物理真实性保障)
-    // ------------------------------------------------------------------------
+
+    // --------------------接收参数，用于接下来RLS参数更新-------------------------------
     double rls_input[2][4];
     float sum_I_des = 0.0f;
     float sum_w_des = 0.0f;
 
     for (int i = 0; i < 4; i++) {
-        // 供 RLS 使用上一帧真实状态
+        // 上一帧率电流以及转速记录传给rls
         rls_input[0][i] = (double)current_fb[i][0];
         rls_input[1][i] = (double)current_fb[i][1];
 
-        // 供后续模型预测使用的期望聚合值
+        // pid计算后的电流值加和用于接下来功率预测
         sum_I_des += (float)current_des[i][0];
         sum_w_des += (float)current_des[i][1];
     }
 
-    // 喂入真实功率，迭代辨识出的最新模型参数存储在 rls_output_avg 中
+    // 调用更新RLS参数
     RLS_Process(rls_input, (double)real_power_fb, rls_history_theta, rls_output_avg);
 
-    // ------------------------------------------------------------------------
-    // 步骤二：执行能量环，获取当前毫秒的战略级功率上限
-    // ------------------------------------------------------------------------
+    // ----------------------------能量环依据剩余能量以及目标能量等更新限制的最大输出功率--------------------------------------------
     float p_max = energy_power_loop(
         config->target_energy, current_energy,
         config->referee_power_max, config->min_power_limit, config->max_power_limit
     );
 
-    // ------------------------------------------------------------------------
-    // 步骤三：利用 RLS 模型进行前向预测 (严格匹配 RLS.c 中的多项式特征)
-    // 多项式: P = k0 + k1*ΣI + k2*Σw + k3*(ΣI)^2 + k4*(Σw)^2 + k5*(ΣI*Σw)
-    // ------------------------------------------------------------------------
+    // ---------------------------提取RLS参数拟合电机模型---------------------------------------------
+    // 模型: P = k0 + k1*ΣI + k2*Σw + k3*(ΣI)**2 + k4*(Σw)**2 + k5*(ΣI*Σw)
     float k0 = (float)rls_output_avg[0];
     float k1 = (float)rls_output_avg[1];
     float k2 = (float)rls_output_avg[2];
@@ -74,21 +69,19 @@ void Chassis_Power_Control_Loop(
     float k4 = (float)rls_output_avg[4];
     float k5 = (float)rls_output_avg[5];
 
-    // 计算如果不加任何干预，底盘将爆发的预测功率
+    // pid计算结果直接下发
     float P_origin = k0 + (k1 * sum_I_des) + (k2 * sum_w_des) +
                      (k3 * sum_I_des * sum_I_des) + (k4 * sum_w_des * sum_w_des) +
                      (k5 * sum_I_des * sum_w_des);
 
-    // 如果预测未超额度，直接通行
+    // 执行功率再分配
     if (P_origin <= p_max) {
         for (int i = 0; i < 4; i++) safe_current_out[i] = current_des[i][0];
         return;
     }
 
-    // ------------------------------------------------------------------------
-    // 步骤四：超额拦截，构建并求解关于 eta 的一元二次方程
-    // A*eta^2 + B*eta + C = 0
-    // ------------------------------------------------------------------------
+
+    // -------------------------功率超限，执行衰减电流法-----------------------------------------------
     float A = k3 * (sum_I_des * sum_I_des);
     float B = (k1 * sum_I_des) + (k5 * sum_I_des * sum_w_des);
     float C = k0 + (k2 * sum_w_des) + (k4 * sum_w_des * sum_w_des) - p_max;
@@ -116,9 +109,7 @@ void Chassis_Power_Control_Loop(
     if (eta > 1.0f) eta = 1.0f;
     if (eta < 0.0f) eta = 0.0f;
 
-    // ------------------------------------------------------------------------
-    // 步骤五：等比例扭矩衰减并输出
-    // ------------------------------------------------------------------------
+    // --------------------更新电流分配数值----------------------------------------------------
     for (int i = 0; i < 4; i++) {
         safe_current_out[i] = (int16_t)(current_des[i][0] * eta);
     }
