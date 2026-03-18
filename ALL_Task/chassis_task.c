@@ -7,7 +7,7 @@
 #include "cmsis_os.h"
 #include "stdio.h"
 #include "../Bsp/LED/bsp_LED.h"
-#include "../Application/auto_aim.h"
+#include "../ALL_Task/communication_task.h"
 #include  "../ALL_Task/gimbal_task.h"
 
 /* --- 逻辑常量与控制参数 --- */
@@ -206,7 +206,7 @@ void chassis_task_func(void const * argument) {
                     float total_vy = vy_rc + vy_kb;
 
                     //哨兵自动挡
-                    if (robot_ctrl.shaobing_mode == 1 )
+                    if (robot_ctrl.shaobing_mode == 1 && robot_ctrl.target_info.valid == 1)
                     // if (robot_ctrl.shaobing_mode == 1 && parse_target_data(&robot_ctrl.target_info , &robot_ctrl.auto_info) == 1)
                     {
                     total_vx = total_vx + robot_ctrl.auto_info.auto_right_speed;

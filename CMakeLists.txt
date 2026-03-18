@@ -52,8 +52,6 @@ add_executable(${CMAKE_PROJECT_NAME}
         Algorithm/MahonyAHRS/MahonyAHRS.c
         Application/mahony.c
         Application/mahony.h
-        Application/auto_aim.c
-        Application/auto_aim.h
         Bsp/usb_cdc/bsp_usb_cdc.c
         Bsp/usb_cdc/bsp_usb_cdc.h
         Components/motor/motor.c
@@ -69,7 +67,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         ALL_Task/chassis_task.h
         ALL_Task/gimbal_task.c
         ALL_Task/gimbal_task.h
-        Application/auto_aim.c
+        ALL_Task/communication_task.c
+        ALL_Task/communication_task.h
 )
 
 # Add STM32CubeMX generated sources

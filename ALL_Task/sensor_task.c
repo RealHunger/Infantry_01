@@ -5,6 +5,7 @@
 #include "math.h"
 #include "cmsis_os.h"
 #include "../Bsp/usb_cdc/bsp_usb_cdc.h"
+#include "../Bsp/uart/bsp_uart.h"
 
 // 姿态解算中间变量
 static fp32 INS_q[4] = {1.0f, 0.0f, 0.0f, 0.0f};

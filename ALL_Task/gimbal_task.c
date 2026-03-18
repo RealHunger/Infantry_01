@@ -8,7 +8,7 @@
 #include "../../Bsp/uart/bsp_uart.h" // 串口驱动头文件-上位机/外设通信
 #include "../../Bsp/led/bsp_led.h"   // LED驱动头文件-状态指示灯控制【保留灯光 不删除】
 #include "../../Components/remote/remote.h" // 遥控器驱动头文件-遥控数据解析
-#include "../../Application/auto_aim.h"     // 自瞄功能头文件-上位机数据解析
+#include "../../ALL_Task/communication_task.h"     // 自瞄功能头文件-上位机数据解析
 
 /***********************************************************************************************************************
 * 宏定义-集中管理 【仅保留实际调用的有效宏定义，分区归类+详细注释，无冗余】
@@ -77,7 +77,6 @@ void gimbal_task_func(void const * argument) {
     // 自瞄功能初始化：获取USB句柄+初始化USB，用于接收上位机(视觉)数据
     struct usb_device* usb = usb_get_device();
     usb->Init(usb);
-    auto_aim_init(usb);
 
     /**************************************** 【静态状态变量区 - 防抖/状态机/计时专用，无冗余】 ****************************************/
     static uint8_t last_relax_toggle = 0;    // 云台失能模式按键 上一帧状态 - 按键防抖，防止误触
@@ -190,8 +189,7 @@ void gimbal_task_func(void const * argument) {
                     world_pit_target -= (ry * RC_PIT_SENS) + mouse_y;
                     world_yaw_target -= (rx * RC_YAW_SENS) + mouse_x;
 
-                    if (robot_ctrl.shaobing_mode == 1 )
-                    //if (robot_ctrl.shaobing_mode == 1 && parse_target_data(&robot_ctrl.target_info , &robot_ctrl.auto_info) == 1)
+                    if (robot_ctrl.shaobing_mode == 1 && robot_ctrl.monitor.vision_online)
                     {
                         world_yaw_target = world_yaw_target + robot_ctrl.auto_info.auto_yaw_speed;
                         yaw_angle_integrate = robot_ctrl.auto_info.auto_yaw_speed;
@@ -205,7 +203,7 @@ void gimbal_task_func(void const * argument) {
                 /********************* 模式2：云台自瞄控制【核心优化】解析全局自瞄数据，视觉闭环 *********************/
                 else if (robot_ctrl.gimbal_mode == GIMBAL_AUTO) {
                     // 解析上位机视觉数据到全局结构体 robot_ctrl.target_info，返回1=有目标，0=丢目标
-                    if (parse_target_data(&robot_ctrl.target_info , &robot_ctrl.auto_info) == 1) {
+                    if (robot_ctrl.monitor.vision_online && robot_ctrl.target_info.valid == 1) {
                         // 指示灯反馈：自瞄模式+有目标 → 蓝灯常亮
                         LED_RED_RESET(); LED_GREEN_RESET(); LED_BLUE_SET();
                         // 直接赋值视觉解算后的目标角度，云台跟随目标

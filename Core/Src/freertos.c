@@ -51,6 +51,7 @@ osThreadId sensor_taskHandle;
 osThreadId motor_taskHandle;
 osThreadId gimbal_taskHandle;
 osThreadId chassis_taskHandle;
+osThreadId comm_taskHandle;
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -62,6 +63,7 @@ extern void sensor_task_func(void const * argument);
 extern void motor_task_func(void const * argument);
 extern void gimbal_task_func(void const * argument);
 extern void chassis_task_func(void const * argument);
+extern void communication_task_func(void const * argument);
 
 extern void MX_USB_DEVICE_Init(void);
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
@@ -128,6 +130,9 @@ void MX_FREERTOS_Init(void) {
   /* definition and creation of chassis_task */
   osThreadDef(chassis_task, chassis_task_func, osPriorityAboveNormal, 0, 512);
   chassis_taskHandle = osThreadCreate(osThread(chassis_task), NULL);
+  /* definition and creation of comm_task */
+  osThreadDef(comm_task, communication_task_func, osPriorityNormal, 0, 512);
+  comm_taskHandle = osThreadCreate(osThread(comm_task), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
