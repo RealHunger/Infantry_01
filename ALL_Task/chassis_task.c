@@ -46,7 +46,6 @@ static uint8_t right_rotate_toggle = 0;  // E键切换：右旋状态（1=右旋
 static uint8_t last_q_pressed = 0;       // 上一帧 Q 键状态（防抖）
 static uint8_t last_e_pressed = 0;       // 上一帧 E 键状态（防抖）
 
-float virtual_yaw_angle = 0.0f;        //虚拟主方向
 
 uint16_t cnt = 0;
 
@@ -205,12 +204,6 @@ void chassis_task_func(void const * argument) {
                     float total_vx = vx_rc + vx_kb;
                     float total_vy = vy_rc + vy_kb;
 
-                    //哨兵自动挡
-                    if (robot_ctrl.shaobing_mode == 1)
-                    {
-                        total_vx = robot_ctrl.target_info.auto_front_speed;
-                        total_vy = robot_ctrl.target_info.auto_right_speed;
-                    }
 
                     // --- B. 各向同性限速 ---
                     float v_norm = sqrtf(total_vx * total_vx + total_vy * total_vy);
@@ -222,8 +215,7 @@ void chassis_task_func(void const * argument) {
                     // --- C. 跟随与旋转逻辑（扩展：Q/E+拨轮统一回正）---
                     float yaw_m_pos;
                     yaw_m->get_status(yaw_m, "POS", &yaw_m_pos);
-                    virtual_yaw_angle = yaw_m_pos - yaw_angle_integrate;
-                    float angle_error = Rad_Format(virtual_yaw_angle - YAW_CENTER_OFFSET);
+                    float angle_error = Rad_Format(yaw_m_pos - YAW_CENTER_OFFSET);
 
                     // 步骤1：判断当前拨轮、Q/E是否处于激活状态
                     uint8_t current_wheel_active = (fabsf(vw_rc) > WHEEL_ACTIVE_THRESHOLD) ? 1 : 0;

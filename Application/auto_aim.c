@@ -52,25 +52,6 @@ int parse_target_data(target_info_t *target) {
         if (!token) return 0;
         target->aim_target_pitch = strtof(token, NULL);
 
-        // 第5段：解析小电脑下发的前进速度
-        token = strtok_r(NULL, delim, &rest);
-        if (!token) return 0;
-        target->aim_target_pitch = strtof(token, NULL);
-
-        // 第6段：解析小电脑下发的左右速度
-        token = strtok_r(NULL, delim, &rest);
-        if (!token) return 0;
-        target->aim_target_pitch = strtof(token, NULL);
-
-        // 第7段：解析小电脑下发的yaw轴速度
-        token = strtok_r(NULL, delim, &rest);
-        if (!token) return 0;
-        target->aim_target_pitch = strtof(token, NULL);
-
-        // // 第7段：解析小电脑下发的pitch轴速度
-        // token = strtok_r(NULL, delim, &rest);
-        // if (!token) return 0;
-        // target->aim_target_pitch = strtof(token, NULL);
 
         // 调用校验函数，返回最终有效性 1=有效 0=无效
         return is_target_valid(target);

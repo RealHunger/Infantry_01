@@ -37,7 +37,6 @@
 #define AUTO_SHOOT_TRIGGER_CNT 2        // 自瞄开火触发阈值：连续读到shoot==1的次数
 
 
-float yaw_angle_integrate = 0.0f;
 
 /***********************************************************************************************************************
 * 函数名：Rad_Format
@@ -190,11 +189,6 @@ void gimbal_task_func(void const * argument) {
                     world_pit_target -= (ry * RC_PIT_SENS) + mouse_y;
                     world_yaw_target -= (rx * RC_YAW_SENS) + mouse_x;
 
-                    if (robot_ctrl.shaobing_mode == 1)
-                    {
-                        world_yaw_target = robot_ctrl.target_info.auto_yaw_speed;
-                        yaw_angle_integrate = robot_ctrl.target_info.auto_yaw_speed;
-                    }
 
                     // 俯仰角目标值软件限位 【第一道防护】严格限制在机械限位内
                     if(world_pit_target > PITCH_UP_LIMIT)  world_pit_target = PITCH_UP_LIMIT;
