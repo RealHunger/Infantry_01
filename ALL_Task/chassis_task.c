@@ -83,7 +83,7 @@ void chassis_task_func(void const * argument) {
     while (1) {
         uint32_t current_tick = osKernelSysTick();
 
-        // //打印接受的数据
+        // // //打印接受的数据
         // static uint32_t last_gateway_print_tick = 0;
         // if (current_tick - last_gateway_print_tick > 500) {
         //     struct uart_device *uart1 = uart_get_device("uart1_dma");

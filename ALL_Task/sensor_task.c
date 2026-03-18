@@ -95,8 +95,10 @@ void sensor_task_func(void const * argument) {
         //            robot_ctrl.gateway_referee_t.armor_id,
         //            robot_ctrl.gateway_referee_t.HP_deducation_reason);
 
-        Usb->Print(Usb, "%.3f,%.3f,%.3f,%.3f,%d,%d\r\n",
+        Usb->Print(Usb, "%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%d,%d\r\n",
            INS_q[0], INS_q[1], INS_q[2], INS_q[3],
+           robot_ctrl.gimbal.yaw,
+           robot_ctrl.gimbal.pitch,
            robot_ctrl.gateway_referee_t.stage_remain_time,
            robot_ctrl.gateway_referee_t.current_HP);
 
