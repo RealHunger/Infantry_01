@@ -51,3 +51,4 @@ __pycache__/
 # Debug/programmer outputs
 *.launch
 openocd.log
+AGENTS.md
