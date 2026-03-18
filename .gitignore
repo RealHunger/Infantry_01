@@ -1,0 +1,53 @@
+# Build outputs
+/build/
+/cmake-build-*/
+*.elf
+*.bin
+*.hex
+*.map
+*.list
+*.o
+*.obj
+*.a
+*.d
+*.su
+*.tmp
+
+# CMake and Ninja generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+.ninja_deps
+.ninja_log
+build.ninja
+
+# IDE and editor files
+.idea/
+.vscode/
+*.code-workspace
+*.suo
+*.user
+*.userossc
+*.sln.docstates
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs and local temp files
+*.log
+*.bak
+*.swp
+*.swo
+*.orig
+
+# Python cache files sometimes created by tooling
+__pycache__/
+*.pyc
+
+# Debug/programmer outputs
+*.launch
+openocd.log
