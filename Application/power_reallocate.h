@@ -14,11 +14,11 @@ typedef struct {
 
 /**
  * @brief 全局底盘功率重分配核心接口 (高度封装)
- * * @param current_des       [4][0]:期望电流, [4][1]:当前转速
+ * * @param current_des       [4][0]:pid已经下发电流, [4][1]:当前转速
  * @param current_fb        [4][0]:真实反馈电流, [4][1]:当前转速 (用于RLS辨识)
  * @param real_power_fb     硬件真实反馈总功率 (用于RLS真实值矫正)
- * @param current_energy    裁判系统/电容当前真实剩余能量 (用于能量环)
- * @param config            控制系统配置参数
+ * @param current_energy    超级电容当前真实剩余能量 (用于能量环)
+ * @param config            系统对应的参数配置
  * @param safe_current_out  [输出] 衰减后安全的下发电流
  */
 void Chassis_Power_Control_Loop(
