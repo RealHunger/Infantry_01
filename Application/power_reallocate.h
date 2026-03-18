@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include "../../Application/struct_typedef.h"
 
+
 // 统一封装的功率分配控制器参数配置
 typedef struct {
     float target_energy;      // 目标维持能量 (J) - 能量环的稳态目标
@@ -13,7 +14,7 @@ typedef struct {
 } Power_Allocate_Config_t;
 
 /**
- * @brief 全局底盘功率重分配核心接口 (高度封装)
+ * @brief 全局底盘功率重分配核心接口
  * * @param current_des       [4][0]:pid已经下发电流, [4][1]:当前转速
  * @param current_fb        [4][0]:真实反馈电流, [4][1]:当前转速 (用于RLS辨识)
  * @param real_power_fb     硬件真实反馈总功率 (用于RLS真实值矫正)
@@ -30,4 +31,9 @@ void Chassis_Power_Control_Loop(
     int16_t safe_current_out[4]
 );
 
+// 判断电容是否断联
+uint8_t verify_feedback_connection();
+
+//
+float real_power_feedback();
 #endif //INFANTRY_01_POWER_REALLOCATE_H

@@ -8,6 +8,7 @@
 static double rls_history_theta[HISTORY_SIZE][NUM_PARAMS] = {0};
 static double rls_output_avg[NUM_PARAMS] = {0};
 
+
 //最大功率能量环替换
 static float energy_power_loop(float target, float now, float ref_max, float min_lim, float max_lim) {
     static float last_error = 0.0f;
@@ -27,9 +28,19 @@ static float energy_power_loop(float target, float now, float ref_max, float min
     return dynamic_pmax;
 }
 
-// ============================================================================
-// 全局核心接口：将 RLS辨识、能量环、二次方程预测 完美串联
-// ============================================================================
+// 检验是否断联
+uint8_t verify_feedback_connection()
+{
+    return 1;
+}
+
+// 超级电容反馈的底盘实际功率
+float real_power_feedback()
+{
+    return 0.0f;
+}
+
+// =====================对外接口=======================================================
 void Chassis_Power_Control_Loop(
     int16_t current_des[4][2], int16_t current_fb[4][2],
     float real_power_fb, float current_energy,

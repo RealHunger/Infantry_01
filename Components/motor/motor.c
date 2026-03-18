@@ -1373,55 +1373,79 @@ void DJI_Motor_Send_CAN1_Group(CAN_HandleTypeDef *hcan) {
     };
     uint32_t mailbox;
 
-    //开始加入功率分配
-    int16_t chassis_des[4][2] = {0}; // pid计算得到下发数据
-    int16_t chassis_fb[4][2]  = {0}; // 电调反馈数据
-    int16_t safe_current[4]   = {0}; // 巩固率重新分配后的数据
-    struct M3508_data *chassis_ptrs[4] = {NULL};
 
-    /* 2. 组 0x200 帧：底盘 M3508 电机 (ID: 1, 2, 3, 4) */
-    for (int i = 0; i < 4; i++) {
-        char name[32];
-        sprintf(name, "M3508_CHASSIS_%d", i + 1);
-        struct motor_device *m = motor_get_device(name);
+    //依据超级电容是否断链给出来两种情况调用
+    if (verify_feedback_connection() == 1)
+    {
+        //开始加入功率分配
+        int16_t chassis_des[4][2] = {0}; // pid计算得到下发数据
+        int16_t chassis_fb[4][2]  = {0}; // 电调反馈数据
+        int16_t safe_current[4]   = {0}; // 巩固率重新分配后的数据
+        struct M3508_data *chassis_ptrs[4] = {NULL};
 
-        if (m && m->motor_data) {
-            chassis_ptrs[i] = (struct M3508_data *)m->motor_data;
-            // 获取刚刚pid得到的数据
-            chassis_des[i][0] = (chassis_ptrs[i]->enable_flag) ? chassis_ptrs[i]->_current_output : 0;
-            chassis_des[i][1] = chassis_ptrs[i]->VEL;
+        /* 2. 组 0x200 帧：底盘 M3508 电机 (ID: 1, 2, 3, 4) */
+        for (int i = 0; i < 4; i++) {
+            char name[32];
+            sprintf(name, "M3508_CHASSIS_%d", i + 1);
+            struct motor_device *m = motor_get_device(name);
 
-            // 刚刚电机反馈得到的数据
-            chassis_fb[i][0] = chassis_ptrs[i]->CURRENT;
-            chassis_fb[i][1] = chassis_ptrs[i]->VEL;
+            if (m && m->motor_data) {
+                chassis_ptrs[i] = (struct M3508_data *)m->motor_data;
+                // 获取刚刚pid得到的数据
+                chassis_des[i][0] = (chassis_ptrs[i]->enable_flag) ? chassis_ptrs[i]->_current_output : 0;
+                chassis_des[i][1] = chassis_ptrs[i]->VEL;
+
+                // 刚刚电机反馈得到的数据
+                chassis_fb[i][0] = chassis_ptrs[i]->CURRENT;
+                chassis_fb[i][1] = chassis_ptrs[i]->VEL;
+            }
         }
+
+        // 进行封装
+        Power_Allocate_Config_t p_cfg = {
+            .target_energy     = 55.0f,  // 电容的目标剩余能量
+            .referee_power_max = 100.0f,  // 裁判系统给的最大功率
+            .max_power_limit   = 345.0f, // 最大功率
+            .min_power_limit   = 15.0f   // 最低功率
+        };
+
+        float real_power = real_power_feedback(); // 电容反馈计算得到的目前的真实功率
+
+        // 获取裁判系统剩余能量
+        float current_eng = robot_ctrl.gateway_referee_t.buffer_energy;
+
+        //调用功率分配接口
+        Chassis_Power_Control_Loop(chassis_des, chassis_fb, real_power, current_eng, &p_cfg, safe_current);
+
+
+        for (int i = 0; i < 4; i++) {
+            if (chassis_ptrs[i]) {
+                tx_200[i*2]   = (uint8_t)(safe_current[i] >> 8);
+                tx_200[i*2+1] = (uint8_t)(safe_current[i] & 0xFF);
+            }
+        }
+        header.StdId = 0x200;
+        HAL_CAN_AddTxMessage(hcan, &header, tx_200, &mailbox);
     }
 
-    // 进行封装
-    Power_Allocate_Config_t p_cfg = {
-        .target_energy     = 55.0f,  // 电容的目标剩余能量
-        .referee_power_max = 100.0f,  // 裁判系统给的最大功率
-        .max_power_limit   = 345.0f, // 最大功率
-        .min_power_limit   = 15.0f   // 最低功率
-    };
-
-    float real_power = 10.0f; // 电容反馈计算得到的目前的真实功率，接下来调用一下超电的反馈数据 U * I 即可
-
-    // 获取裁判系统剩余能量
-    float current_eng = robot_ctrl.gateway_referee_t.buffer_energy;
-
-    //调用功率分配接口
-    Chassis_Power_Control_Loop(chassis_des, chassis_fb, real_power, current_eng, &p_cfg, safe_current);
-
-
-    for (int i = 0; i < 4; i++) {
-        if (chassis_ptrs[i]) {
-            tx_200[i*2]   = (uint8_t)(safe_current[i] >> 8);
-            tx_200[i*2+1] = (uint8_t)(safe_current[i] & 0xFF);
+    else
+    {
+        /* 2. 组 0x200 帧：底盘 M3508 电机 (ID: 1, 2, 3, 4) */
+        for (int i = 0; i < 4; i++) {
+            char name[32];
+            sprintf(name, "M3508_CHASSIS_%d", i + 1);
+            struct motor_device *m = motor_get_device(name);
+            if (m && m->motor_data) {
+                struct M3508_data *d = (struct M3508_data *)m->motor_data;
+                int16_t out = (d->enable_flag) ? d->_current_output : 0;
+                // 大疆协议：高位在前 (Big-Endian)
+                tx_200[i*2]   = (uint8_t)(out >> 8);
+                tx_200[i*2+1] = (uint8_t)(out & 0xFF);
+            }
         }
+        header.StdId = 0x200;
+        HAL_CAN_AddTxMessage(hcan, &header, tx_200, &mailbox);
     }
-    header.StdId = 0x200;
-    HAL_CAN_AddTxMessage(hcan, &header, tx_200, &mailbox);
 
     /* 3. 组 0x1FF 帧：其他执行机构 (ID: 5, 6) */
     // 索引映射说明：i=0->ID 5(拨弹), i=1->ID 6(云台YAW)
