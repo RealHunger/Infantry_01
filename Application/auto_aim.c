@@ -20,7 +20,7 @@ int auto_aim_init(struct usb_device *usb_dev) {
 }
 
 // 解析目标数据【核心重写：适配 valid,shoot,yaw,pitch\r\n 格式】
-int parse_target_data(target_info_t *target) {
+int parse_target_data(target_info_t *target,auto_info_t *move) {
     char buffer[100];
     // 接收上位机USB数据，超时200us，长度不变
     int received_len = auto_aim_usb->Recv(auto_aim_usb, buffer, sizeof(buffer) - 1, 200);
@@ -55,17 +55,17 @@ int parse_target_data(target_info_t *target) {
         // 第5段：解析小电脑下发的前进速度
         token = strtok_r(NULL, delim, &rest);
         if (!token) return 0;
-        target->auto_front_speed = strtof(token, NULL);
+        move->auto_front_speed = strtof(token, NULL);
 
         // 第6段：解析小电脑下发的左右速度
         token = strtok_r(NULL, delim, &rest);
         if (!token) return 0;
-        target->auto_right_speed = strtof(token, NULL);
+        move->auto_right_speed = strtof(token, NULL);
 
         // 第7段：解析小电脑下发的yaw轴速度
         token = strtok_r(NULL, delim, &rest);
         if (!token) return 0;
-        target->auto_yaw_speed = strtof(token, NULL);
+        move->auto_yaw_speed = strtof(token, NULL);
 
 
         // 调用校验函数，返回最终有效性 1=有效 0=无效

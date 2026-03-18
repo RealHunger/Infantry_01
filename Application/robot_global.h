@@ -60,6 +60,8 @@ typedef struct {
     // ==========【新增核心】自瞄视觉数据 - 全局共享 ==========
     target_info_t target_info;   // 上位机下发的自瞄数据(valid,shoot,yaw,pitch)
 
+    auto_info_t auto_info;
+
     struct {
         // 0x101 核心数据
         uint16_t current_HP;               // 当前血量

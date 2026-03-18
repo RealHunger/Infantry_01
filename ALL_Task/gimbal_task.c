@@ -190,10 +190,11 @@ void gimbal_task_func(void const * argument) {
                     world_pit_target -= (ry * RC_PIT_SENS) + mouse_y;
                     world_yaw_target -= (rx * RC_YAW_SENS) + mouse_x;
 
-                    if (robot_ctrl.shaobing_mode == 1)
+                    if (robot_ctrl.shaobing_mode == 1 )
+                    //if (robot_ctrl.shaobing_mode == 1 && parse_target_data(&robot_ctrl.target_info , &robot_ctrl.auto_info) == 1)
                     {
-                        world_yaw_target = world_yaw_target + robot_ctrl.target_info.auto_yaw_speed;
-                        yaw_angle_integrate = robot_ctrl.target_info.auto_yaw_speed;
+                        world_yaw_target = world_yaw_target + robot_ctrl.auto_info.auto_yaw_speed;
+                        yaw_angle_integrate = robot_ctrl.auto_info.auto_yaw_speed;
                     }
 
                     // 俯仰角目标值软件限位 【第一道防护】严格限制在机械限位内
@@ -204,7 +205,7 @@ void gimbal_task_func(void const * argument) {
                 /********************* 模式2：云台自瞄控制【核心优化】解析全局自瞄数据，视觉闭环 *********************/
                 else if (robot_ctrl.gimbal_mode == GIMBAL_AUTO) {
                     // 解析上位机视觉数据到全局结构体 robot_ctrl.target_info，返回1=有目标，0=丢目标
-                    if (parse_target_data(&robot_ctrl.target_info) == 1) {
+                    if (parse_target_data(&robot_ctrl.target_info , &robot_ctrl.auto_info) == 1) {
                         // 指示灯反馈：自瞄模式+有目标 → 蓝灯常亮
                         LED_RED_RESET(); LED_GREEN_RESET(); LED_BLUE_SET();
                         // 直接赋值视觉解算后的目标角度，云台跟随目标
