@@ -4,7 +4,7 @@
 #include "struct_typedef.h"
 #include "stdint.h"
 #include "../Components/remote/remote.h"
-#include "../../Application/auto_aim.h"  //【新增】引入自瞄头文件，支持target_info_t结构体
+#include "../Application/auto_aim.h"  //【新增】引入自瞄头文件，支持target_info_t结构体
 
 /* --- 模式枚举定义 --- */
 
