@@ -268,6 +268,20 @@ void DM_MIT_send_enable_cmd(struct motor_device *motor)
     uint32_t send_mail_box;
     CAN_TxHeaderTypeDef enable_tx_message;
     uint8_t enable_can_send_data[8];
+    uint8_t clear_error_data[8];
+
+    memset(&enable_tx_message, 0, sizeof(enable_tx_message));
+    enable_tx_message.StdId = (uint32_t)(motor->motor_id & 0x7FFU);
+    enable_tx_message.IDE = CAN_ID_STD;
+    enable_tx_message.RTR = CAN_RTR_DATA;
+    enable_tx_message.DLC = 0x08;
+
+    for (int i = 0; i < 7; ++i) clear_error_data[i] = 0xFF;
+    clear_error_data[7] = 0xFB;
+
+    HAL_CAN_AddTxMessage(motor->motor_can_handle, &enable_tx_message, clear_error_data, &send_mail_box);
+
+    osDelay(50);
 
     memset(&enable_tx_message, 0, sizeof(enable_tx_message));
     enable_tx_message.StdId = (uint32_t)(motor->motor_id & 0x7FFU);

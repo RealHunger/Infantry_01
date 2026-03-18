@@ -15,7 +15,7 @@
 #define MOUSE_PIT_SENS          0.0002f  // 鼠标纵向灵敏度
 #define FOLLOW_P_GAIN           0.5f
 #define RC_DEADZONE             10
-#define YAW_CENTER_OFFSET       1.9f//-0.13f（步兵） //1.9f（哨兵）
+#define YAW_CENTER_OFFSET       -1.7f//-1.7f（步兵） //1.9f（哨兵）
 
 // 底盘几何参数配置
 #define MOTOR_RPM_TO_VECTOR     3000.0f
